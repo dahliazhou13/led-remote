@@ -1,7 +1,7 @@
 `default_nettype none
 module test(input[2:0] r, input[2:0] g, input[2:0] b, input up, input down,
   input  clk,
-  output reg led, output[6:0] svg
+  output reg led, output[6:0] svg, output[6:0] neg_sign
   );
   // Neopixel state machine.
   reg [2:0] state;
@@ -10,12 +10,14 @@ module test(input[2:0] r, input[2:0] g, input[2:0] b, input up, input down,
   reg [7:0] bits;
   reg [7:0] led_num;
   
-  reg[3:0] bg_level = 4'd2;
+  reg[3:0] bg_level = 4'd0;
   
   wire[7:0] rw;
   wire[7:0] gw;
   wire[7:0] bw;
   
+  //if the display is negative
+  reg neg = 0;
   
   wire[1:0] u_s;//up state
   wire[1:0] d_s; //down state
@@ -25,6 +27,10 @@ module test(input[2:0] r, input[2:0] g, input[2:0] b, input up, input down,
   convert(b, bw);
   display(bg_level, svg);
   //assign_value(rw,gw,bw,test_color);
+  
+  
+  //display negative sign
+  second_display(neg, neg_sign);
   
   //BRG
   reg [24:0] test_color;
@@ -56,24 +62,45 @@ module test(input[2:0] r, input[2:0] g, input[2:0] b, input up, input down,
 		//if up_state is 2, we must update the bg_level
 		if(u_s == 2'd2)
 		begin
-			if(bg_level < 4) bg_level <= bg_level + 1;
+			if(bg_level == 4'd1 && neg == 1 )
+			begin
+				bg_level <= 4'd0;
+				neg <= 0;
+			end
+			else if(bg_level == 4'd2 && neg == 1)
+			begin
+				bg_level <= 4'd1;
+			end
+			else if(bg_level < 4'd2) bg_level <= bg_level + 1;
 		end
 		
 		//if down_state is 2, we must update the bg_level
 		if(d_s == 2'd2)
-			if(bg_level > 0 ) bg_level <= bg_level - 1;
+		begin
+			if(bg_level == 4'd1 && neg == 1 )
+			begin
+				bg_level <= 4'd2;
+				
+			end
+			else if(bg_level == 4'd0)
+			begin
+				bg_level <= 4'd1;
+				neg <= 1;
+			end
+			else if(bg_level > 4'd0 && !(bg_level == 4'd2 && neg == 1)) bg_level <= bg_level - 1;
+		end
 		
 
 		
 		
-		if(bg_level == 3'd4)
+		if(bg_level == 3'd2 && neg == 0)
 		// Full brightness
 		begin
 				test_color[23:16] <= bw;
 				test_color[15:8] <= rw;
 				test_color[7:0] <= gw;
 		end
-		else if(bg_level == 3)
+		else if(bg_level == 3'd1 && neg == 0)
 		//7/8 brightness
 		begin
 			test_color[23:16] <= bw << 1;
@@ -82,21 +109,21 @@ module test(input[2:0] r, input[2:0] g, input[2:0] b, input up, input down,
 			
 		end
 		
-        else if(bg_level == 3'd2)
+        else if(bg_level == 3'd0)
         // 3/4 brightness [0]
         begin
             test_color[23:16] <= bw << 2;
             test_color[15:8] <= rw << 2;
             test_color[7:0] <= gw << 2;
         end
-        else if(bg_level == 3'd1)
+        else if(bg_level == 3'd1 && neg == 1)
         // 5/8 brightness [-1]
         begin 
             test_color[23:16] <= bw << 3;
             test_color[15:8] <= rw << 3;
             test_color[7:0] <= gw << 3;
         end
-        else if(bg_level == 3'd0)
+        else if(bg_level == 3'd2 && neg == 1)
         // 1/2 brightness [-2]
         begin
             test_color[23:16] <= bw << 4;
@@ -207,4 +234,16 @@ assign f[5] = (~a3&~a2&a0) | (~a3&a1&a0)|(~a3&~a2&a1) | (a3&a2&~a1&a0);
 assign f[6] = (~a3&~a2&~a1) | (~a3&a2&a1&a0)  | (a3&a2&~a1&~a0);
 endmodule
 
+module second_display(b, f);
+input b;
+output[6:0] f;
 
+assign f[0] = 1;
+assign f[1] = 1;
+assign f[2] = 1;
+assign f[3] = 1;
+assign f[4] = 1;
+assign f[5] = 1;
+assign f[6] = ~b;
+
+endmodule
