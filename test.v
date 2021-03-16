@@ -1,5 +1,5 @@
 `default_nettype none
-module test(input[2:0] r, input[2:0] g, input[2:0] b, input up, input down,
+module test(input[2:0] r, input[2:0] g, input[2:0] b, input mode, input up, input down,
   input  clk,
   output reg led, output[6:0] svg, output[6:0] neg_sign
   );
@@ -12,6 +12,7 @@ module test(input[2:0] r, input[2:0] g, input[2:0] b, input up, input down,
   
   reg[3:0] bg_level = 4'd0;
   
+  
   wire[7:0] rw;
   wire[7:0] gw;
   wire[7:0] bw;
@@ -21,6 +22,10 @@ module test(input[2:0] r, input[2:0] g, input[2:0] b, input up, input down,
   
   wire[1:0] u_s;//up state
   wire[1:0] d_s; //down state
+  
+  parameter D = 5000000;
+  
+  reg[31:0] count = 32'd0;
   
   convert(r,rw);
   convert(g,gw);
@@ -56,9 +61,12 @@ module test(input[2:0] r, input[2:0] g, input[2:0] b, input up, input down,
   
   // Process the state machine at each 12MHz clock edge.
   always@(posedge clk)
-  
     begin
-	 
+		
+		count <= count + 1;
+		if(count >= D) count <= 0;
+		
+		
 		//if up_state is 2, we must update the bg_level
 		if(u_s == 2'd2)
 		begin
@@ -132,6 +140,9 @@ module test(input[2:0] r, input[2:0] g, input[2:0] b, input up, input down,
         end
 		
 		
+			if(mode == 1 && count < D/2) test_color <= 0;
+			
+			
       // Process the state machine; states 0-3 are the four WS2812B 'ticks',
       // each consisting of 83.33 * 4 ~= 333.33 nanoseconds. Four of those
       // ticks are then ~1333.33 nanoseconds long, and we can get close to
