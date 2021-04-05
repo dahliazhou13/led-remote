@@ -96,7 +96,7 @@ module remote(input[2:0] r, input[2:0] g, input[2:0] b,
     end
 endmodule
 
-module convert1(input[2:0] a, output[7:0] out);
+module convert(input[2:0] a, output[7:0] out);
 	parameter D = 6'd36;
 	assign out = a * D;
 endmodule
